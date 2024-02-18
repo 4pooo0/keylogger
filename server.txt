@@ -1,2 +1,2 @@
-tcp://0.tcp.eu.ngrok.io
-10677
+5.tcp.eu.ngrok.io:16844
+16844
