@@ -1,2 +1,2 @@
-5.tcp.eu.ngrok.io:16844
+5.tcp.eu.ngrok.io
 16844
