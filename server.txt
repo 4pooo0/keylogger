@@ -1,2 +1,2 @@
-0.tcp.eu.ngrok.io
-19135
+localhost
+65212
