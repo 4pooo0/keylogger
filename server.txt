@@ -1,2 +1,2 @@
-6521-cs-67084786011-default.cs-europe-west4-fycr.cloudshell.dev
-80
+0.tcp.jp.ngrok.io
+19747
